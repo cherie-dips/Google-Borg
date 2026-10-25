@@ -1,0 +1,5 @@
+variant,min_bucket,p90_machines,overhead_pct
+exact,0,16016,0
+bucketed,0.00390625,21821,36.245
+bucketed,0.015625,22299,39.2295
+bucketed,0.0625,31936,99.4006

@@ -1,0 +1,6 @@
+variant,equivalence_classes,score_cache,relaxed_randomization,elapsed_ms,feasibility_checks,score_computations,cache_hits,pending
+none,0,0,0,3393.52,249600000,224956733,0,0
+equivalence_classes,1,0,0,260.453,16879129,15747280,0,0
+score_cache,0,1,0,9537.2,249600000,16954463,208002270,0
+relaxed_randomization,0,0,1,60.6357,1391564,1280000,0,0
+all,1,1,1,16.5795,110404,102063,0,0

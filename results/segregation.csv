@@ -1,0 +1,9 @@
+config,reclamation,p90_machines
+shared,0,16016
+prod_only,0,10050
+nonprod_only,0,6493
+segregated_total,0,16543
+shared,1,9898
+prod_only,1,10050
+nonprod_only,1,4581
+segregated_total,1,14631

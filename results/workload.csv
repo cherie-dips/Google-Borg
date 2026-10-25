@@ -1,0 +1,2 @@
+source,machines,tasks,prod_tasks,cpu_capacity,ram_capacity,cpu_requested,ram_requested,seeds,policy
+trace,12480,144266,55782,6604.25,5864,7678.84,5784.24,11,hybrid

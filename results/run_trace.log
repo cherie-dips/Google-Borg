@@ -1,0 +1,84 @@
+trace: 6 task_events files, 1086990 events, snapshot at t=30666s
+trace: 12480 machines, 144266 running tasks (55782 prod), 527 running tasks skipped for missing requests
+
+== info ==
+  source           trace
+  machines         12480 (capacity cpu 6604.2, ram 5864.0)
+  jobs / tasks     3973 / 144266 (55782 prod)
+  requested        cpu 7678.8 (116%), ram 5784.2 (99%)
+
+== policies: scoring policy vs cell size (§3.2) ==
+  worst_fit                    p90= 16315 machines  (min 16259, max 16323)  [46.3s]
+  best_fit                     p90= 16494 machines  (min 16429, max 16505)  [44.9s]
+  hybrid                       p90= 16016 machines  (min 15942, max 16028)  [39.3s]
+  worst_fit    stranded at 16494 machines: cpu 8.91%, ram 22.96%, pending 0, vs best fit -1.1% machines
+  best_fit     stranded at 16494 machines: cpu 10.56%, ram 24.57%, pending 0, vs best fit +0.0% machines
+  hybrid       stranded at 16494 machines: cpu 7.38%, ram 19.90%, pending 0, vs best fit -2.9% machines
+
+== segregation: shared cell vs separate prod/non-prod cells (Fig. 5) ==
+  -- without reclamation --
+  prod + non-prod together     p90= 16016 machines  (min 15942, max 16028)  [43.7s]
+  prod only                    p90= 10050 machines  (min 10019, max 10065)  [13.0s]
+  non-prod only                p90=  6493 machines  (min 6442, max 6497)  [10.2s]
+  segregated total 16543 vs shared 16016  ->  +3.3% machines if segregated
+  -- with reclamation --
+  prod + non-prod together     p90=  9898 machines  (min 9867, max 9901)  [27.7s]
+  prod only                    p90= 10050 machines  (min 10019, max 10065)  [13.9s]
+  non-prod only                p90=  4581 machines  (min 4535, max 4590)  [11.7s]
+  segregated total 14631 vs shared 9898  ->  +47.8% machines if segregated
+
+== buckets: exact requests vs power-of-two buckets (Fig. 8) ==
+  exact requests               p90= 16016 machines  (min 15942, max 16028)  [42.7s]
+  buckets >= 1/256             p90= 21821 machines  (min 21743, max 21829)  [54.1s]
+    overhead +36.2%
+  buckets >= 1/64              p90= 22299 machines  (min 22246, max 22329)  [61.2s]
+    overhead +39.2%
+  buckets >= 1/16              p90= 31936 machines  (min 31886, max 31953)  [2293.1s]
+    overhead +99.4%
+
+== scalability: §3.4 optimizations (20000 tasks, 12480 machines, one full pass) ==
+  variant                  time(ms)    feas.checks         scores   cache hits  pending
+  none                       952080      249600000      224956733            0        0
+  equivalence_classes           284       16879129       15747280            0        0
+  score_cache                208739      249600000       16954463    208002270        0
+  relaxed_randomization          55        1391564        1280000            0        0
+  all                            25         110404         102063            0        0
+
+== reclamation: non-prod tasks in reclaimed resources (Fig. 10) ==
+  reservations / limits: cpu 51%, ram 70% (usage model, §5.5)
+  without reclamation          p90= 16016 machines  (min 15942, max 16028)  [42.9s]
+  with reclamation             p90=  9898 machines  (min 9867, max 9901)  [35.1s]
+  without reclamation the cell needs +61.8% machines
+
+== alpha: hybrid stranding weight (ablation; alpha = 0 is best fit) ==
+  alpha = 0                    p90= 16483 machines  (min 16463, max 16483)  [13.0s]
+  alpha = 0.5                  p90= 16430 machines  (min 16380, max 16430)  [14.4s]
+  alpha = 1                    p90= 16335 machines  (min 16304, max 16335)  [13.3s]
+  alpha = 2                    p90= 16174 machines  (min 16159, max 16174)  [12.7s]
+  alpha = 5                    p90= 16040 machines  (min 16011, max 16040)  [13.0s]
+  alpha = 10                   p90= 15983 machines  (min 15966, max 15983)  [12.7s]
+  alpha = 20                   p90= 15971 machines  (min 15959, max 15971)  [13.7s]
+
+CSV results written to results/
+./build/bin/borgsim --workload trace --out results all  628.54s user 31.41s system 16% cpu 1:07:15.26 total
+
+# Re-run of the scalability experiment alone: during the full run above the machine was
+# heavily loaded, which inflated its wall-clock timings (operation counts are unaffected).
+trace: 6 task_events files, 1086990 events, snapshot at t=30666s
+trace: 12480 machines, 144266 running tasks (55782 prod), 527 running tasks skipped for missing requests
+
+== info ==
+  source           trace
+  machines         12480 (capacity cpu 6604.2, ram 5864.0)
+  jobs / tasks     3973 / 144266 (55782 prod)
+  requested        cpu 7678.8 (116%), ram 5784.2 (99%)
+
+== scalability: §3.4 optimizations (20000 tasks, 12480 machines, one full pass) ==
+  variant                  time(ms)    feas.checks         scores   cache hits  pending
+  none                         3394      249600000      224956733            0        0
+  equivalence_classes           260       16879129       15747280            0        0
+  score_cache                  9537      249600000       16954463    208002270        0
+  relaxed_randomization          61        1391564        1280000            0        0
+  all                            17         110404         102063            0        0
+
+CSV results written to results/

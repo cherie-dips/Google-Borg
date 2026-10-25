@@ -1,0 +1,60 @@
+# Plan B: a mini Borg cell. 1 Borgmaster + 5 heterogeneous Borglets ("machines").
+#   docker compose up --build      then open http://localhost:8080
+#   docker compose stop borglet-3  to kill a machine; docker compose start borglet-3 to bring it back
+
+x-borglet: &borglet
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  image: mini-borg:latest
+  command: ["borglet"]
+  # Privileged + private cgroup namespace: the Borglet creates one cgroup v2 per task.
+  privileged: true
+  cgroup: private
+  restart: unless-stopped
+  depends_on: [borgmaster]
+
+services:
+  borgmaster:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: mini-borg:latest
+    ports: ["8080:8080"]
+    volumes:
+      - ./results:/opt/borg/results:ro   # Plan A results, shown in the UI's second tab
+
+  borglet-1:
+    <<: *borglet
+    hostname: borglet-1
+    environment: {BORGLET_NAME: borglet-1, BORGLET_CPU: "1", BORGLET_RAM_MB: "512", BORGLET_ATTRS: "rack=r1,ssd=false", BORG_MASTER: "http://borgmaster:8080"}
+    cpus: 1.0
+    mem_limit: 640m
+
+  borglet-2:
+    <<: *borglet
+    hostname: borglet-2
+    environment: {BORGLET_NAME: borglet-2, BORGLET_CPU: "1", BORGLET_RAM_MB: "512", BORGLET_ATTRS: "rack=r1,ssd=false", BORG_MASTER: "http://borgmaster:8080"}
+    cpus: 1.0
+    mem_limit: 640m
+
+  borglet-3:
+    <<: *borglet
+    hostname: borglet-3
+    environment: {BORGLET_NAME: borglet-3, BORGLET_CPU: "2", BORGLET_RAM_MB: "1024", BORGLET_ATTRS: "rack=r2,ssd=true", BORG_MASTER: "http://borgmaster:8080"}
+    cpus: 2.0
+    mem_limit: 1152m
+
+  borglet-4:
+    <<: *borglet
+    hostname: borglet-4
+    environment: {BORGLET_NAME: borglet-4, BORGLET_CPU: "2", BORGLET_RAM_MB: "1024", BORGLET_ATTRS: "rack=r2,ssd=true", BORG_MASTER: "http://borgmaster:8080"}
+    cpus: 2.0
+    mem_limit: 1152m
+
+  borglet-5:
+    <<: *borglet
+    hostname: borglet-5
+    environment: {BORGLET_NAME: borglet-5, BORGLET_CPU: "1", BORGLET_RAM_MB: "768", BORGLET_ATTRS: "rack=r3,ssd=false", BORG_MASTER: "http://borgmaster:8080"}
+    cpus: 1.0
+    mem_limit: 896m

@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mini Borg</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"></span>
+      <div>
+        <div class="brand-name">Mini Borg</div>
+        <div class="brand-sub">cell <span id="cell-name">local</span> · <span id="conn" class="conn">connecting…</span></div>
+      </div>
+    </div>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="cell" role="tab">Live cell <small>Plan B</small></button>
+      <button class="tab" data-tab="results" role="tab">Simulation results <small>Plan A</small></button>
+    </nav>
+    <label class="policy">
+      <span>Scoring policy</span>
+      <select id="policy">
+        <option value="hybrid">Hybrid (stranding-aware)</option>
+        <option value="best_fit">Best fit</option>
+        <option value="worst_fit">Worst fit (E-PVM)</option>
+      </select>
+    </label>
+  </header>
+
+  <!-- ============================== LIVE CELL ============================== -->
+  <div id="tab-cell" class="tab-page">
+    <section class="kpis" id="kpis"></section>
+
+    <div class="layout">
+      <aside class="col-left">
+        <section class="card">
+          <h2>Submit a job</h2>
+          <div class="presets" id="presets"></div>
+          <form id="job-form" autocomplete="off">
+            <div class="row">
+              <label>Name<input name="name" required value="web-frontend"></label>
+              <label>User<input name="user" value="alice"></label>
+            </div>
+            <div class="row">
+              <label>Type
+                <select name="type">
+                  <option value="service" title="restarted on failure">service</option>
+                  <option value="batch" title="runs to completion">batch</option>
+                </select>
+              </label>
+              <label>Priority
+                <input name="priority" type="number" min="0" max="400" value="200">
+              </label>
+            </div>
+            <div class="band-pick" id="band-pick">
+              <button type="button" data-p="0" class="b-free">free</button>
+              <button type="button" data-p="100" class="b-batch">batch</button>
+              <button type="button" data-p="200" class="b-production">production</button>
+              <button type="button" data-p="300" class="b-monitoring">monitoring</button>
+            </div>
+            <div class="row three">
+              <label>Tasks<input name="tasks" type="number" min="1" max="200" value="3"></label>
+              <label>CPU / task<input name="cpu" type="number" step="0.05" min="0.05" value="0.25"></label>
+              <label>RAM MB / task<input name="ram_mb" type="number" step="16" min="16" value="128"></label>
+            </div>
+            <div class="row">
+              <label>Workload
+                <select name="workload">
+                  <option value="service">long-running</option>
+                  <option value="sleep">sleep</option>
+                  <option value="cpu">cpu burn</option>
+                  <option value="mem">memory grow</option>
+                  <option value="crash">crash after N s</option>
+                </select>
+              </label>
+              <label>Duration s<input name="duration" type="number" min="0" value="60"></label>
+            </div>
+            <div class="row w-row">
+              <label class="w-threads">CPU threads<input name="threads" type="number" min="1" max="8" value="1"></label>
+              <label class="w-mb">Allocate MB<input name="mb" type="number" min="1" value="150"></label>
+            </div>
+            <div class="row">
+              <label>Constraint key<input name="ckey" placeholder="e.g. ssd"></label>
+              <label>value<input name="cval" placeholder="true"></label>
+            </div>
+            <div class="checks">
+              <label class="check"><input type="checkbox" name="chard" checked> hard constraint</label>
+              <label class="check"><input type="checkbox" name="distinct" checked> one task per machine</label>
+            </div>
+            <button class="primary" type="submit">Submit job</button>
+            <div id="form-msg" class="form-msg" role="status"></div>
+          </form>
+        </section>
+
+        <section class="card help">
+          <h2>Try this</h2>
+          <ol>
+            <li>Submit <b>Batch analytics</b> and <b>Free crawler</b> to fill the cell.</li>
+            <li>Submit <b>Big prod job</b>: it preempts the lowest-priority tasks first.</li>
+            <li>Click <b>Fail</b> on a machine: after 3 missed polls its tasks are rescheduled.</li>
+            <li><b>Memory hog</b> gets OOM-killed by its cgroup; <b>Crashing service</b> restarts.</li>
+            <li>Switch the scoring policy and submit again to compare placements.</li>
+          </ol>
+        </section>
+      </aside>
+
+      <main class="col-main">
+        <section class="card">
+          <div class="card-head">
+            <h2>Machines</h2>
+            <div class="legend">
+              <span><i class="sw prod"></i>prod allocated</span>
+              <span><i class="sw nonprod"></i>non-prod allocated</span>
+              <span><i class="sw used"></i>actual usage</span>
+            </div>
+          </div>
+          <div id="machines" class="machines"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Jobs</h2>
+            <span class="muted small">click a job to highlight its tasks</span>
+          </div>
+          <div class="table-wrap"><table id="jobs" class="jobs"></table></div>
+          <div id="job-detail"></div>
+        </section>
+
+        <section class="card">
+          <h2>Pending queue</h2>
+          <div id="pending" class="pending"></div>
+        </section>
+      </main>
+
+      <aside class="col-right">
+        <section class="card events-card">
+          <div class="card-head">
+            <h2>Events</h2>
+            <label class="check small"><input type="checkbox" id="ev-sched" checked> placements</label>
+          </div>
+          <div id="events" class="events"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ============================== RESULTS ============================== -->
+  <div id="tab-results" class="tab-page hidden">
+    <div class="results" id="results"></div>
+  </div>
+
+  <div id="tip" class="tip hidden"></div>
+  <script src="app.js"></script>
+</body>
+</html>
